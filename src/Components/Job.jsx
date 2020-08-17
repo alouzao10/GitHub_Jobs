@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Badge } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Card, Badge, Button, Collapse } from 'react-bootstrap';
 import ReactMarkdown from 'react-markdown';
 
 function Job(props) {
@@ -11,9 +11,13 @@ function Job(props) {
     location,
     how_to_apply,
     company_logo,
+    description,
   } = props.job;
+
+  const [open, setOpen] = useState(false);
+
   return (
-    <Card>
+    <Card className='mb-3'>
       <Card.Body>
         <div className='d-flex justify-content-between'>
           <div>
@@ -39,6 +43,16 @@ function Job(props) {
             alt={company}
           />
         </div>
+        <Card.Text>
+          <Button onClick={() => setOpen(!open)} variant='primary'>
+            {!open ? 'View Details' : 'Hide Details'}
+          </Button>
+        </Card.Text>
+        <Collapse in={open}>
+          <div className='mt-4'>
+            <ReactMarkdown source={description} />
+          </div>
+        </Collapse>
       </Card.Body>
     </Card>
   );

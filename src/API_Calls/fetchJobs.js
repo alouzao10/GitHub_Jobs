@@ -5,6 +5,7 @@ const ACTION = {
   MAKE_REQUEST: 'make-request',
   GET: 'get-data',
   ERROR: 'error',
+  UPDATE_HAS_NXTPAGE: 'has_nxtpage',
 };
 
 const BASE_URL =
@@ -31,7 +32,9 @@ function reducer(state, action) {
         jobs: [],
         error: action.payload.error,
       };
-      break;
+    case ACTION.UPDATE_HAS_NXTPAGE:
+      // loading the new set of jobs and clear the jobs list
+      return { ...state, hasNextPage: action.payload.hasNextPage };
     default:
       return state;
   }
@@ -48,6 +51,7 @@ export default function FetchJobs(params, page) {
   useEffect(() => {
     // Cancel token to terminate request
     const cancelToken = axios.CancelToken.source();
+    const cancelToken2 = axios.CancelToken.source();
 
     // Make a request on a new page
     dispatch({ type: ACTION.MAKE_REQUEST });
@@ -61,14 +65,34 @@ export default function FetchJobs(params, page) {
         // Return the Data from the API and set the state
         dispatch({ type: ACTION.GET, payload: { jobs: res.data } });
       })
-      .catch((error) => {
+      .catch((e) => {
         // Catch any errors as a result of the fetch
-        if (axios.isCancel()) return;
-        dispatch({ type: ACTION.ERROR, payload: { error } });
+        if (axios.isCancel(e)) return;
+        dispatch({ type: ACTION.ERROR, payload: { error: e } });
+      });
+
+    // Check if there is more than one page
+    axios
+      .get(BASE_URL, {
+        cancelToken2: cancelToken2.token,
+        params: { markdown: true, page: page + 1, ...params },
+      })
+      .then((res) => {
+        // Return the Data from the API and set the state
+        dispatch({
+          type: ACTION.UPDATE_HAS_NXTPAGE,
+          payload: { hasNextPage: res.data.length !== 0 },
+        });
+      })
+      .catch((e) => {
+        // Catch any errors as a result of the fetch
+        if (axios.isCancel(e)) return;
+        dispatch({ type: ACTION.ERROR, payload: { error: e } });
       });
 
     return () => {
       cancelToken.cancel();
+      cancelToken2.cancel();
     };
   }, [params, page]);
 
